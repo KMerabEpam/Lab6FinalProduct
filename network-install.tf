@@ -33,7 +33,7 @@ resource "aws_route_table" "internet_route" {
   tags = {
     Name = "Webserver-1"
   }
- 
+}
   #Create subnet # 1 in eu-west-1a
 resource "aws_subnet" "subnet_1" {
   provider          = aws.region-master
