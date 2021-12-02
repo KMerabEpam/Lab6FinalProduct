@@ -57,3 +57,4 @@ resource "aws_rds_cluster_instance" "secondary" {
   identifier           = "test-secondary-cluster-instance"
   cluster_identifier   = aws_rds_cluster.secondary.id
   instance_class       = "db.r4.large"
+}
