@@ -18,8 +18,8 @@ resource "aws_rds_global_cluster" "webserver" {
 resource "aws_rds_cluster" "primary" {
   provider                  = aws.primary
   engine                    = aws_rds_global_cluster.webserver.engine
-  engine_version            = aws_rds_global_cluster.example.engine_version
-  cluster_identifier        = "test-primary-cluster"webserver
+  engine_version            = aws_rds_global_cluster.webserver.engine_version
+  cluster_identifier        = "test-primary-cluster"
   master_username           = "admin"
   master_password           = "pass123"
   database_name             = "ws_db"
@@ -49,7 +49,6 @@ resource "aws_rds_cluster" "secondary" {
   depends_on = [
     aws_rds_cluster_instance.primary
   ]
-}
 
 resource "aws_rds_cluster_instance" "secondary" {
   provider             = aws.secondary
@@ -58,5 +57,3 @@ resource "aws_rds_cluster_instance" "secondary" {
   identifier           = "test-secondary-cluster-instance"
   cluster_identifier   = aws_rds_cluster.secondary.id
   instance_class       = "db.r4.large"
-  db_subnet_group_name = "default"
-}
