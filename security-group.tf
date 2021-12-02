@@ -22,7 +22,32 @@ resource "aws_security_group" "SSH-HTTP-HTTPS" {
   }
 
   tags = {
-    Name = "allow_tls"
+    Name = "SSH-HTTP-HTTPS"
+  }
+}
+
+resource "aws_security_group" "RDS" {
+  name        = "RDS"
+  description = "RDS"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    description      = "RDS"
+    from_port        = 3306
+    to_port          = 3306
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "RDS"
   }
 }
 
