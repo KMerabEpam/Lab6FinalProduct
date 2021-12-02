@@ -1,60 +1,74 @@
-provider "aws" {
-  alias  = "primary"
-  region = "eu-central-1a"
-}
+module "db" {
+  source  = "terraform-aws-modules/rds/aws"
+  version = "~> 3.0"
 
-provider "aws" {
-  alias  = "secondary"
-  region = "eu-central-1b"
-}
+  identifier = "demodb"
 
-resource "aws_rds_global_cluster" "webserver" {
-  global_cluster_identifier = "global-test"
-  engine                    = "aurora-postgresql"
-  engine_version            = "11.9"
-  database_name             = "ws_db"
-}
+  engine            = "mysql"
+  engine_version    = "5.7.19"
+  instance_class    = "db.t2.large"
+  allocated_storage = 5
 
-resource "aws_rds_cluster" "primary" {
-  provider                  = aws.primary
-  engine                    = aws_rds_global_cluster.webserver.engine
-  engine_version            = aws_rds_global_cluster.webserver.engine_version
-  cluster_identifier        = "test-primary-cluster"
-  master_username           = "admin"
-  master_password           = "pass123"
-  database_name             = "ws_db"
-  global_cluster_identifier = aws_rds_global_cluster.webserver.id
-  db_subnet_group_name      = "default"
-}
+  name     = "demodb"
+  username = "user"
+  password = "YourPwdShouldBeLongAndSecure!"
+  port     = "3306"
 
-resource "aws_rds_cluster_instance" "primary" {
-  provider             = aws.primary
-  engine               = aws_rds_global_cluster.webserver.engine
-  engine_version       = aws_rds_global_cluster.webserver.engine_version
-  identifier           = "test-primary-cluster-instance"
-  cluster_identifier   = aws_rds_cluster.primary.id
-  instance_class       = "db.r4.large"
-  db_subnet_group_name = "default"
-}
+  iam_database_authentication_enabled = true
 
-resource "aws_rds_cluster" "secondary" {
-  provider                  = aws.secondary
-  engine                    = aws_rds_global_cluster.webserver.engine
-  engine_version            = aws_rds_global_cluster.webserver.engine_version
-  cluster_identifier        = "test-secondary-cluster"
-  global_cluster_identifier = aws_rds_global_cluster.webserver.id
-  skip_final_snapshot       = true
-  db_subnet_group_name      = "default"
+  vpc_security_group_ids = [aws_security_group.RDS.id]
 
-  depends_on = [
-    aws_rds_cluster_instance.primary
+  maintenance_window = "Mon:00:00-Mon:03:00"
+  backup_window      = "03:00-06:00"
+
+  # Enhanced Monitoring - see example for details on how to create the role
+  # by yourself, in case you don't want to create it automatically
+  monitoring_interval    = "30"
+  monitoring_role_name   = "MyRDSMonitoringRole"
+  create_monitoring_role = true
+
+  tags = {
+    Owner       = "user"
+    Environment = "dev"
+  }
+
+  # DB subnet group
+  subnet_ids = module.vpc.private_subnets
+
+  # DB parameter group
+  family = "mysql5.7"
+
+  # DB option group
+  major_engine_version = "5.7"
+
+  # Database Deletion Protection
+  deletion_protection = true
+
+  parameters = [
+    {
+      name  = "character_set_client"
+      value = "utf8mb4"
+    },
+    {
+      name  = "character_set_server"
+      value = "utf8mb4"
+    }
   ]
 
-resource "aws_rds_cluster_instance" "secondary" {
-  provider             = aws.secondary
-  engine               = aws_rds_global_cluster.webserver.engine
-  engine_version       = aws_rds_global_cluster.webserver.engine_version
-  identifier           = "test-secondary-cluster-instance"
-  cluster_identifier   = aws_rds_cluster.secondary.id
-  instance_class       = "db.r4.large"
+  options = [
+    {
+      option_name = "MARIADB_AUDIT_PLUGIN"
+
+      option_settings = [
+        {
+          name  = "SERVER_AUDIT_EVENTS"
+          value = "CONNECT"
+        },
+        {
+          name  = "SERVER_AUDIT_FILE_ROTATIONS"
+          value = "37"
+        },
+      ]
+    },
+  ]
 }
